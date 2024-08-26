@@ -38,8 +38,6 @@ const GameWindow = () => {
     };
 
     const getValidMoves = (character) => {
-        // Example function to get valid moves for a character
-        // Replace with actual logic to fetch valid moves based on game rules
         return [
             { x: 1, y: 2 },
             { x: 3, y: 4 }
