@@ -10,7 +10,6 @@ class GameState {
 
     initializeBoard() {
         // Set up initial positions of characters on the board
-        // Example: { R0C0: { player: 'Player1', character: 'P' }, ... }
         const board = {};
         for (let row = 0; row < 5; row++) {
             for (let col = 0; col < 5; col++) {
@@ -24,7 +23,7 @@ class GameState {
         // Add player to the game state
         this.players[playerId] = {
             characters: characters,
-            positions: this.getInitialPositions(playerId, characters), 
+            positions: this.getInitialPositions(playerId, characters),
         };
         // Logic to decide the first player
         if (!this.turn) {
@@ -34,9 +33,11 @@ class GameState {
 
     getInitialPositions(playerId, characters) {
         // Determine initial positions based on selected characters
-        // Example logic: Player1 characters on R0, Player2 on R4
         const startingRow = playerId === 'Player1' ? 0 : 4;
-        return characters.map((char, index) => `R${startingRow}C${index}`);
+        return characters.reduce((positions, char, index) => {
+            positions[char] = `R${startingRow}C${index}`;
+            return positions;
+        }, {});
     }
 
     makeMove(playerId, character, targetPosition) {
@@ -58,8 +59,27 @@ class GameState {
     }
 
     isValidMove(playerId, character, targetPosition) {
-        // Validate if the move is within the game rules
-        return true; // Placeholder logic
+        const characterPosition = this.players[playerId].positions[character];
+
+        // Check if target position is within the board
+        if (!this.board.hasOwnProperty(targetPosition)) {
+            return false;
+        }
+
+        // Check if the move is not to the current position
+        if (characterPosition === targetPosition) {
+            return false;
+        }
+
+        // Check if target position is occupied by an opponent's character
+        const targetCell = this.board[targetPosition];
+        if (targetCell && targetCell.player !== playerId) {
+            return false;
+        }
+
+        // Placeholder for character-specific move validation
+        // For now, let's assume any move within the board is valid
+        return true;
     }
 
     switchTurn() {
@@ -69,7 +89,16 @@ class GameState {
 
     checkGameOver() {
         // Check if one player has no remaining characters and end the game
-        // Set this.gameOver to true if the game is over
+        const player1HasCharacters = Object.values(this.players['Player1'].positions).some(position => this.board[position]?.player === 'Player1');
+        const player2HasCharacters = Object.values(this.players['Player2'].positions).some(position => this.board[position]?.player === 'Player2');
+
+        if (!player1HasCharacters) {
+            this.gameOver = true;
+            console.log('Player 2 wins!');
+        } else if (!player2HasCharacters) {
+            this.gameOver = true;
+            console.log('Player 1 wins!');
+        }
     }
 
     getGameState() {

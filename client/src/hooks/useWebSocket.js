@@ -1,29 +1,37 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-const useWebSocket = (url = 'ws://localhost:5000', onMessage = () => {}) => {
+const useWebSocket = (url = 'ws://localhost:5000', onMessage = () => {}, reconnectInterval = 5000) => {
   const webSocketRef = useRef(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Initialize WebSocket
-    const webSocket = new WebSocket(url);
-    webSocketRef.current = webSocket;
+    const connect = () => {
+      const webSocket = new WebSocket(url);
+      webSocketRef.current = webSocket;
 
-    // Handle WebSocket events
-    webSocket.onopen = () => {
-      console.log('WebSocket connection opened');
+      webSocket.onopen = () => {
+        console.log('WebSocket connection opened');
+        setIsConnected(true);
+      };
+
+      webSocket.onmessage = (event) => {
+        onMessage(event.data);
+      };
+
+      webSocket.onclose = () => {
+        console.log('WebSocket connection closed');
+        setIsConnected(false);
+        // Reconnect after a delay
+        setTimeout(connect, reconnectInterval);
+      };
+
+      webSocket.onerror = (error) => {
+        console.error('WebSocket error', error);
+        // Handle errors or trigger reconnect if needed
+      };
     };
 
-    webSocket.onmessage = (event) => {
-      onMessage(event.data);
-    };
-
-    webSocket.onclose = () => {
-      console.log('WebSocket connection closed');
-    };
-
-    webSocket.onerror = (error) => {
-      console.error('WebSocket error', error);
-    };
+    connect();
 
     // Cleanup function to close WebSocket on component unmount or URL change
     return () => {
@@ -32,11 +40,10 @@ const useWebSocket = (url = 'ws://localhost:5000', onMessage = () => {}) => {
         console.log('WebSocket connection closed on cleanup');
       }
     };
-  }, [url, onMessage]);  // Re-run effect only if url or onMessage changes
+  }, [url, onMessage, reconnectInterval]);  // Re-run effect if url, onMessage, or reconnectInterval changes
 
   // Function to send a message via WebSocket
-  // Send a message via WebSocket
-const sendMessage = (message) => {
+  const sendMessage = (message) => {
     if (webSocketRef.current && webSocketRef.current.readyState === WebSocket.OPEN) {
       try {
         const jsonMessage = JSON.stringify(message);
@@ -46,9 +53,8 @@ const sendMessage = (message) => {
       }
     }
   };
-  
 
-  return sendMessage;
+  return { sendMessage, isConnected };
 };
 
 export default useWebSocket;
