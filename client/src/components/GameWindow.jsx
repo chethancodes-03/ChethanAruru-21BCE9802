@@ -16,42 +16,70 @@ const GameWindow = () => {
         }
     };
 
-    const sendMessage = useWebSocket('ws://localhost:5000', (message) => {
-        const data = JSON.parse(message);
-        if (data.type === 'GAME_STATE') {
-          setGameState(data.gameState);
-          setMoveHistory(data.gameState.moveHistory);
-        }
-      });
-    
+    const sendMessage = useWebSocket('ws://localhost:5000', handleMessage);
+
     useEffect(() => {
         // Effect to handle WebSocket messages if needed outside the hook's callback
-        // Currently, all logic is handled within the hook's message handler.
-        // Remove this effect if unnecessary.
-      }, []); // Empty dependency array since WebSocket is managed within the hook
-    
+    }, []); // Empty dependency array since WebSocket is managed within the hook
 
     const handleCharacterClick = (character) => {
         // Fetch valid moves for the selected character
-        // Update state with valid moves
+        // For simplicity, this example assumes a method to get valid moves
+        const moves = getValidMoves(character);
+        setValidMoves(moves);
         setSelectedCharacter(character);
     };
 
     const handleMove = (move) => {
         // Send move to server via WebSocket
         sendMessage(JSON.stringify({ type: 'MOVE', move }));
+        setValidMoves([]); // Clear valid moves after sending the move
+        setSelectedCharacter(null); // Deselect character
+    };
+
+    const getValidMoves = (character) => {
+        // Example function to get valid moves for a character
+        // Replace with actual logic to fetch valid moves based on game rules
+        return [
+            { x: 1, y: 2 },
+            { x: 3, y: 4 }
+        ];
     };
 
     return (
         <div className="game-window">
             <div className="grid grid-cols-5 gap-1">
-                {/* Render game board here */}
+                {gameState && gameState.board.map((row, rowIndex) => (
+                    <div key={rowIndex} className="grid-row">
+                        {row.map((cell, cellIndex) => (
+                            <div
+                                key={cellIndex}
+                                className={`cell ${cell.character ? cell.character.color : ''}`}
+                                onClick={() => cell.character && handleCharacterClick(cell.character)}
+                            >
+                                {cell.character ? cell.character.name : ''}
+                            </div>
+                        ))}
+                    </div>
+                ))}
             </div>
             <div className="move-controls">
-                {/* Render valid moves and handle move actions */}
+                {validMoves.length > 0 && (
+                    <div>
+                        <h2>Valid Moves</h2>
+                        {validMoves.map((move, index) => (
+                            <button key={index} onClick={() => handleMove(move)}>
+                                Move to ({move.x}, {move.y})
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
             <div className="move-history">
-                {/* Render move history */}
+                <h2>Move History</h2>
+                {moveHistory.map((move, index) => (
+                    <div key={index}>{move}</div>
+                ))}
             </div>
         </div>
     );
