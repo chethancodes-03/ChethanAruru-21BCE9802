@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect } from 'react';
-import useWebSocket from '../hooks/useWebSocket'; // Custom hook for WebSocket
+import useWebSocket from '../hooks/useWebSocket'; // Ensure this path is correct
 
 const GameWindow = () => {
     const [gameState, setGameState] = useState(null);
@@ -16,25 +16,22 @@ const GameWindow = () => {
         }
     };
 
-    const sendMessage = useWebSocket('ws://localhost:8080', handleMessage);
-
-    useEffect(() => {
-        // Effect to handle WebSocket messages if needed outside the hook's callback
-    }, []); // Empty dependency array since WebSocket is managed within the hook
+    const sendMessage = useWebSocket('ws://localhost:5000', handleMessage);
 
     const handleCharacterClick = (character) => {
-        // Fetch valid moves for the selected character
-        // For simplicity, this example assumes a method to get valid moves
         const moves = getValidMoves(character);
         setValidMoves(moves);
         setSelectedCharacter(character);
     };
 
     const handleMove = (move) => {
-        // Send move to server via WebSocket
-        sendMessage(JSON.stringify({ type: 'MOVE', move }));
-        setValidMoves([]); // Clear valid moves after sending the move
-        setSelectedCharacter(null); // Deselect character
+        if (typeof sendMessage === 'function') {
+            sendMessage(JSON.stringify({ type: 'MOVE', move }));
+            setValidMoves([]);
+            setSelectedCharacter(null);
+        } else {
+            console.error('sendMessage is not a function');
+        }
     };
 
     const getValidMoves = (character) => {
@@ -47,7 +44,7 @@ const GameWindow = () => {
     return (
         <div className="game-window">
             <div className="grid grid-cols-5 gap-1">
-                {gameState && gameState.board.map((row, rowIndex) => (
+                {gameState?.board.map((row, rowIndex) => (
                     <div key={rowIndex} className="grid-row">
                         {row.map((cell, cellIndex) => (
                             <div

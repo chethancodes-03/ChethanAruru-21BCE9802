@@ -1,7 +1,8 @@
-/* eslint-disable no-unused-vars */
+/* eslint-disable no-unused-expressions */
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-const CharacterSelection = ({ onSelectionComplete }) => {
+
+const CharacterSelection = ({ onSelectionComplete, playerId }) => {
   const [selectedCharacters, setSelectedCharacters] = useState([]);
   const characters = ['Pawn', 'Hero1', 'Hero2'];
 
@@ -19,8 +20,18 @@ const CharacterSelection = ({ onSelectionComplete }) => {
     setSelectedCharacters([]);
   };
 
+  const handleSelectionComplete = () => {
+    if (isValidSelection()) {
+       ({
+        type: 'JOIN_GAME',
+        playerId,
+        characters: selectedCharacters,
+      });
+      onSelectionComplete(selectedCharacters);
+    }
+  };
+
   const isValidSelection = () => {
-    // Check for at least one of each character type
     const characterCount = selectedCharacters.reduce((count, char) => {
       count[char] = (count[char] || 0) + 1;
       return count;
@@ -40,43 +51,42 @@ const CharacterSelection = ({ onSelectionComplete }) => {
           <button
             key={char}
             onClick={() => handleCharacterSelect(char)}
-            className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded m-2"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded m-2"
           >
             {char}
           </button>
         ))}
       </div>
       <div className="mb-4">
-        <button
-          onClick={handleUndo}
-          className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded m-2"
-        >
-          Undo
-        </button>
-        <button
-          onClick={handleReset}
-          className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded m-2"
-        >
-          Refresh
-        </button>
+        <h3 className="text-xl">Selected Characters:</h3>
+        <ul>
+          {selectedCharacters.map((char, index) => (
+            <li key={index}>{char}</li>
+          ))}
+        </ul>
       </div>
       <div className="mb-4">
-        <p>Selected Characters: {selectedCharacters.join(', ')}</p>
-      </div>
-      {isValidSelection() && (
-        <button
-          onClick={() => onSelectionComplete(selectedCharacters)}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Go to Game
+        <button onClick={handleUndo} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded m-2">
+          Undo
         </button>
-      )}
+        <button onClick={handleReset} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded m-2">
+          Reset
+        </button>
+      </div>
+      <button
+        onClick={handleSelectionComplete}
+        className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+        disabled={!isValidSelection()}
+      >
+        Start Game
+      </button>
     </div>
   );
 };
 
 CharacterSelection.propTypes = {
-    onSelectionComplete: PropTypes.func.isRequired, // Define the type of the prop
-  };
+  onSelectionComplete: PropTypes.func.isRequired,
+  playerId: PropTypes.string,
+};
 
 export default CharacterSelection;
