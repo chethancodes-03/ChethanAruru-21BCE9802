@@ -16,7 +16,7 @@ const GameWindow = () => {
         }
     };
 
-    const sendMessage = useWebSocket('ws://localhost:5000', handleMessage);
+    const sendMessage = useWebSocket('ws://localhost:8080', handleMessage);
 
     useEffect(() => {
         // Effect to handle WebSocket messages if needed outside the hook's callback

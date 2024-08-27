@@ -4,10 +4,10 @@ const cors = require('cors');
 const http = require('http');
 const WebSocket = require('ws');
 
-
 const app = express();
 app.use(cors());
 app.use(express.json());
+
 const GameState = require('./GameState');
 const GameRoom = require('./models/GameRoom');
 
@@ -16,16 +16,20 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 const gameState = new GameState();
 
+// Connect to MongoDB
 mongoose.connect(mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-}).then(() => console.log('MongoDB connected'))
-  .catch(err => console.log(err));
+})
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
+// Serve basic endpoint
 app.get('/', (req, res) => {
   res.send('Server is running');
 });
 
+// API to create a new game room
 app.post('/api/create-room', async (req, res) => {
   try {
     const gameRoom = new GameRoom();
@@ -36,6 +40,7 @@ app.post('/api/create-room', async (req, res) => {
   }
 });
 
+// API to join an existing game room
 app.post('/api/join-room/:roomId', async (req, res) => {
   const { roomId } = req.params;
   try {
@@ -56,44 +61,31 @@ app.post('/api/join-room/:roomId', async (req, res) => {
   }
 });
 
-
+// WebSocket handling
 wss.on('connection', (ws) => {
   console.log('New client connected');
 
   ws.on('message', (message) => {
-    console.log(`Received message => ${message}`);
-    // Handle incoming messages and game logic
-    if (typeof message === 'string') {
-      try{
-        if (message){
-          const data = JSON.parse(message);
+    try {
+      const data = JSON.parse(message);
 
-          switch (data.type) {
-              case 'JOIN_GAME':
-                  // Add player to the game state
-                  gameState.addPlayer(data.playerId, data.characters);
-                  break;
-              case 'MOVE':
-                  // Process player move
-                  gameState.makeMove(data.playerId, data.character, data.targetPosition);
-                  break;
-              // Add more cases as needed
-          }
-
-          // Broadcast updated game state to all players
-          broadcastGameState();
-          ws.send("Message received");
-        }else{
-          console.log('Received empty message');
-        }
-        
-      }catch(error){
-        console.error('Failed to parse message:', error);
+      switch (data.type) {
+        case 'JOIN_GAME':
+          gameState.addPlayer(data.playerId, data.characters);
+          break;
+        case 'MOVE':
+          gameState.makeMove(data.playerId, data.character, data.targetPosition);
+          break;
+        default:
+          console.log('Unknown message type:', data.type);
       }
-    }else{
-      console.error('Invalid message type:', typeof message);
+
+      // Broadcast updated game state to all players
+      broadcastGameState();
+    } catch (error) {
+      console.error('Failed to process message:', error);
+      ws.send(JSON.stringify({ type: 'ERROR', message: 'Invalid message format' }));
     }
-    
   });
 
   ws.on('close', () => {
@@ -105,18 +97,18 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Existing MongoDB connection and Express routes...
+// Function to broadcast the current game state to all connected clients
 function broadcastGameState() {
   const state = JSON.stringify({ type: 'GAME_STATE', gameState: gameState.getGameState() });
   wss.clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-          client.send(state);
-      }
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(state);
+    }
   });
 }
 
-
-const PORT = process.env.PORT || 5000;
+// Start the server
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

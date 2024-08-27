@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-const useWebSocket = (url = 'ws://localhost:5000', onMessage = () => {}, reconnectInterval = 5000) => {
+const useWebSocket = (url = 'ws://localhost:8080', onMessage = () => {}, reconnectInterval = 8080) => {
   const webSocketRef = useRef(null);
   const [isConnected, setIsConnected] = useState(false);
 
